@@ -1,3 +1,51 @@
 <h1>
 	it's working
 </h1>
+pipeline { 
+
+  environment { 
+      registry = "coolvks87/centosvivek" 
+      registryCredential = 'dockerhub_id' 
+      dockerImage = ''
+      BUILD = '1'
+  }
+
+agent any 
+  stages { 
+      stage('Cloning our Git') { 
+          steps { 
+             git(
+                    url: "https://github.com/kumarvivek3087/Jenekins.git",
+                    branch: "main",
+                    changelog: true,
+                    poll: true,
+                    credentialsId: 'GitCred'
+                )
+          }
+      } 
+
+      stage('Building our image') { 
+          steps { 
+              script { 
+                  dockerImage = docker.build registry + ":$BUILD_NUMBER"
+              }
+          } 
+      }
+
+      stage('Deploy our image') { 
+          steps { 
+              script { 
+                  docker.withRegistry( '', registryCredential ) { 
+                      dockerImage.push() 
+                  }
+              } 
+          }
+      } 
+
+      stage('Cleaning up') { 
+          steps { 
+              sh "docker rmi $registry:$BUILD_NUMBER" 
+          }
+      } 
+  }
+}
